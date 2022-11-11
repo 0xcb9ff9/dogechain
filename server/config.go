@@ -37,7 +37,7 @@ type Config struct {
 	DataDir     string
 	RestoreFile *string
 
-	LeveldbOptions *LeveldbOptions
+	BoltOptions *BoltOptions
 
 	Seal           bool
 	SecretsManager *secrets.SecretsManagerConfig
@@ -49,14 +49,9 @@ type Config struct {
 	ValidatorKey string
 }
 
-// LeveldbOptions holds the leveldb options
-type LeveldbOptions struct {
-	CacheSize           int
-	Handles             int
-	BloomKeyBits        int
-	CompactionTableSize int
-	CompactionTotalSize int
-	NoSync              bool
+// BoltOptions holds the bolt options
+type BoltOptions struct {
+	SyncWrites bool
 }
 
 // Telemetry holds the config details for metric services

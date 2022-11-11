@@ -65,7 +65,10 @@ func (s *stateExTxn) Commit() error {
 		return ErrStateTransactionIsCancel
 	}
 
-	batch := s.storage.Batch()
+	batch, err := s.storage.Batch()
+	if err != nil {
+		return err
+	}
 
 	for _, pair := range s.db {
 		err := batch.Set(pair.key, pair.value)

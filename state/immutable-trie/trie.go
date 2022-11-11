@@ -3,6 +3,7 @@ package itrie
 import (
 	"bytes"
 	"fmt"
+	"log"
 
 	"github.com/dogechain-lab/dogechain/state"
 	"github.com/dogechain-lab/dogechain/types"
@@ -268,6 +269,8 @@ func (t *Txn) lookup(node interface{}, key []byte) (Node, []byte) {
 		if n.hash {
 			nc, ok, err := GetNode(n.buf, t.state)
 			if err != nil {
+				log.Printf("error key: %v", key)
+
 				panic(err)
 			}
 

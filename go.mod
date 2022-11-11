@@ -32,7 +32,6 @@ require (
 	github.com/ryanuber/columnize v2.1.2+incompatible
 	github.com/spf13/cobra v1.5.0
 	github.com/stretchr/testify v1.8.0
-	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7
 	github.com/umbracle/go-eth-bn256 v0.0.0-20190607160430-b36caf4e0f6b
 	github.com/umbracle/go-web3 v0.0.0-20220224145938-aaa1038c1b69
 	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
@@ -63,7 +62,10 @@ require (
 	lukechampine.com/blake3 v1.1.7 // indirect
 )
 
-require go.uber.org/atomic v1.9.0
+require (
+	go.etcd.io/bbolt v1.3.6
+	go.uber.org/atomic v1.9.0
+)
 
 require (
 	github.com/armon/go-radix v1.0.0 // indirect

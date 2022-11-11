@@ -135,21 +135,16 @@ func newLoggerFromConfig(config *Config) (hclog.Logger, error) {
 	return newCLILogger(config), nil
 }
 
-func newLevelDBBuilder(logger hclog.Logger, config *Config, path string) kvdb.LevelDBBuilder {
-	leveldbBuilder := kvdb.NewLevelDBBuilder(
+func newBoltBuilder(logger hclog.Logger, config *Config, path string) kvdb.BoltBuilder {
+	boltBuilder := kvdb.NewBoltBuilder(
 		logger,
 		path,
 	)
 
-	// trie cache + blockchain cache = config.LeveldbOptions.CacheSize / 2
-	leveldbBuilder.SetCacheSize(config.LeveldbOptions.CacheSize / 2).
-		SetHandles(config.LeveldbOptions.Handles).
-		SetBloomKeyBits(config.LeveldbOptions.BloomKeyBits).
-		SetCompactionTableSize(config.LeveldbOptions.CompactionTableSize).
-		SetCompactionTotalSize(config.LeveldbOptions.CompactionTotalSize).
-		SetNoSync(config.LeveldbOptions.NoSync)
+	// trie cache + blockchain cache = config.BoltOptions.CacheSize * 2
+	boltBuilder.SetSyncWrites(config.BoltOptions.SyncWrites)
 
-	return leveldbBuilder
+	return boltBuilder
 }
 
 // NewServer creates a new Minimal server, using the passed in configuration
@@ -206,13 +201,13 @@ func NewServer(config *Config) (*Server, error) {
 
 	// start blockchain object
 	stateStorage, err := func() (itrie.Storage, error) {
-		leveldbBuilder := newLevelDBBuilder(
+		boltBuilder := newBoltBuilder(
 			logger,
 			config,
-			filepath.Join(m.config.DataDir, "trie"),
+			filepath.Join(m.config.DataDir, "trie.db"),
 		)
 
-		return itrie.NewLevelDBStorage(leveldbBuilder)
+		return itrie.NewKVStorage(boltBuilder)
 	}()
 
 	if err != nil {
@@ -232,18 +227,18 @@ func NewServer(config *Config) (*Server, error) {
 	genesisRoot := m.executor.WriteGenesis(config.Chain.Genesis.Alloc)
 	config.Chain.Genesis.StateRoot = genesisRoot
 
-	// create leveldb storageBuilder
-	leveldbBuilder := newLevelDBBuilder(
+	// create bolt storageBuilder
+	boltBuilder := newBoltBuilder(
 		logger,
 		config,
-		filepath.Join(m.config.DataDir, "blockchain"),
+		filepath.Join(m.config.DataDir, "blockchain.db"),
 	)
 
 	// blockchain object
 	m.blockchain, err = blockchain.NewBlockchain(
 		logger,
 		config.Chain,
-		kvstorage.NewLevelDBStorageBuilder(logger, leveldbBuilder),
+		kvstorage.NewKVStorageBuilder(logger, boltBuilder),
 		nil,
 		m.executor,
 		m.serverMetrics.blockchain,

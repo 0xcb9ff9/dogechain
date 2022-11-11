@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/dogechain-lab/dogechain/helper/hex"
+
 	"github.com/dogechain-lab/dogechain/types"
 	"github.com/dogechain-lab/fastrlp"
 	"github.com/stretchr/testify/assert"

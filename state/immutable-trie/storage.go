@@ -2,9 +2,11 @@ package itrie
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/dogechain-lab/dogechain/helper/hex"
 	"github.com/dogechain-lab/dogechain/helper/kvdb"
+
 	"github.com/dogechain-lab/fastrlp"
 )
 
@@ -30,7 +32,7 @@ type Storage interface {
 	StorageReader
 	StorageWriter
 
-	Batch() Batch
+	Batch() (Batch, error)
 	Close() error
 }
 
@@ -55,32 +57,48 @@ type kvStorage struct {
 	db kvdb.KVBatchStorage
 }
 
-func (kv *kvStorage) Get(k []byte) ([]byte, bool, error) {
-	return kv.db.Get(k)
-}
-
 func (kv *kvStorage) Set(k, v []byte) error {
 	return kv.db.Set(k, v)
 }
 
-func (kv *kvStorage) Batch() Batch {
-	return &kvStorageBatch{
-		bc: kv.db.Batch(),
+func (kv *kvStorage) Get(k []byte) ([]byte, bool, error) {
+	value, ok, err := kv.db.Get(k)
+	if !ok && err == nil {
+		return []byte{}, false, nil
 	}
+
+	if err != nil {
+		log.Fatalln("kvStorage.Get", "err", err)
+
+		return []byte{}, false, nil
+	}
+
+	return value, true, err
+}
+
+func (kv *kvStorage) Batch() (Batch, error) {
+	batch, err := kv.db.Batch()
+
+	return &kvStorageBatch{
+		bc: batch,
+	}, err
 }
 
 func (kv *kvStorage) Close() error {
 	return kv.db.Close()
 }
 
-func NewLevelDBStorage(leveldbBuilder kvdb.LevelDBBuilder) (Storage, error) {
-	db, err := leveldbBuilder.Build()
+func NewKVStorage(boltBuilder kvdb.BoltBuilder) (Storage, error) {
+	db, err := boltBuilder.Build()
 	if err != nil {
 		return nil, err
 	}
 
 	return &kvStorage{db: db}, nil
 }
+
+// memStorage is an inmemory trie storage
+// test only
 
 type memStorage struct {
 	db map[string][]byte
@@ -112,8 +130,8 @@ func (m *memStorage) Get(p []byte) ([]byte, bool, error) {
 	return v, true, nil
 }
 
-func (m *memStorage) Batch() Batch {
-	return &memBatch{db: &m.db}
+func (m *memStorage) Batch() (Batch, error) {
+	return &memBatch{db: &m.db}, nil
 }
 
 func (m *memStorage) Close() error {
@@ -128,15 +146,30 @@ func (m *memBatch) Set(p, v []byte) error {
 	return nil
 }
 
+func (m *memBatch) Get(p []byte) ([]byte, bool, error) {
+	v, ok := (*m.db)[hex.EncodeToHex(p)]
+	if !ok {
+		return []byte{}, false, nil
+	}
+
+	return v, true, nil
+}
+
 func (m *memBatch) Commit() error {
 	return nil
 }
 
 // GetNode retrieves a node from storage
 func GetNode(root []byte, storage StorageReader) (Node, bool, error) {
-	data, ok, _ := storage.Get(root)
+	data, ok, err := storage.Get(root)
 	if !ok {
 		return nil, false, nil
+	}
+
+	if err != nil {
+		log.Println("GetNode", "err", "not found", "root", hex.EncodeToHex(root))
+
+		return nil, false, err
 	}
 
 	// NOTE. We dont need to make copies of the bytes because the nodes

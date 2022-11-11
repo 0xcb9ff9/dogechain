@@ -2,6 +2,7 @@ package kvstorage
 
 import (
 	"os"
+	"path"
 	"testing"
 
 	"github.com/dogechain-lab/dogechain/blockchain/storage"
@@ -9,18 +10,18 @@ import (
 	"github.com/hashicorp/go-hclog"
 )
 
-func newLevelDBStorage(t *testing.T) (storage.Storage, func()) {
+func newBoltStorage(t *testing.T) (storage.Storage, func()) {
 	t.Helper()
 
-	path, err := os.MkdirTemp("/tmp", "minimal_storage")
+	tmpDir, err := os.MkdirTemp("/tmp", "minimal_storage")
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	logger := hclog.NewNullLogger()
 
-	s, err := NewLevelDBStorageBuilder(
-		logger, kvdb.NewLevelDBBuilder(logger, path)).Build()
+	s, err := NewKVStorageBuilder(
+		logger, kvdb.NewBoltBuilder(logger, path.Join(tmpDir, "database.db"))).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +31,7 @@ func newLevelDBStorage(t *testing.T) (storage.Storage, func()) {
 			t.Fatal(err)
 		}
 
-		if err := os.RemoveAll(path); err != nil {
+		if err := os.RemoveAll(tmpDir); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -38,6 +39,6 @@ func newLevelDBStorage(t *testing.T) (storage.Storage, func()) {
 	return s, closeFn
 }
 
-func TestLevelDBStorage(t *testing.T) {
-	storage.TestStorage(t, newLevelDBStorage)
+func TestBoltStorage(t *testing.T) {
+	storage.TestStorage(t, newBoltStorage)
 }
