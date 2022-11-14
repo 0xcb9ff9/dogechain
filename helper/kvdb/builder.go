@@ -8,6 +8,7 @@ import (
 )
 
 const (
+	// need sync writes for safety?
 	DefaultBoltSyncWrites = true
 )
 

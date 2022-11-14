@@ -89,7 +89,7 @@ func (b *boltBatch) Write() error {
 	return b.tx.Commit()
 }
 
-func (b *boltBatch) Close() error {
+func (b *boltBatch) Rollback() error {
 	return b.tx.Rollback()
 }
 
@@ -155,6 +155,10 @@ func (kv *boltKV) Get(k []byte) ([]byte, bool, error) {
 	}
 
 	return valCopy, true, nil
+}
+
+func (kv *boltKV) Sync() error {
+	return kv.db.Sync()
 }
 
 // Close closes the bolt storage instance

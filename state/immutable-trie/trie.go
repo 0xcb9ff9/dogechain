@@ -124,7 +124,7 @@ func (t *Trie) Commit(objs []*state.Object) (state.Snapshot, []byte) {
 	var nTrie *Trie = nil
 
 	// Create an insertion batch for all the entries
-	t.state.ExclusiveTransaction(func(st StateTransaction) {
+	err := t.state.ExclusiveTransaction(func(st StateTransaction) {
 		defer st.Rollback()
 
 		tt := t.Txn()
@@ -198,6 +198,10 @@ func (t *Trie) Commit(objs []*state.Object) (state.Snapshot, []byte) {
 			panic(err)
 		}
 	})
+
+	if err != nil {
+		panic(err)
+	}
 
 	return nTrie, root
 }

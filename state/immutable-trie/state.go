@@ -34,7 +34,7 @@ type State interface {
 	NewSnapshot() state.Snapshot
 	NewSnapshotAt(types.Hash) (state.Snapshot, error)
 
-	ExclusiveTransaction(execute func(st StateTransaction))
+	ExclusiveTransaction(execute func(st StateTransaction)) error
 	ExistTransaction() bool
 }
 
@@ -69,6 +69,8 @@ func (s *stateExTxn) Commit() error {
 	if err != nil {
 		return err
 	}
+
+	defer batch.Rollback()
 
 	for _, pair := range s.db {
 		err := batch.Set(pair.key, pair.value)
@@ -157,7 +159,9 @@ func (s *stateImpl) Set(k, v []byte) error {
 		s.stateExTxnMux.Lock()
 		defer s.stateExTxnMux.Unlock()
 
-		if s.stateExTxnRef != nil {
+		// double check transaction is exist
+		if s.stateExTxnRef != nil &&
+			s.isTransaction.Load() {
 			_ = s.stateExTxnRef.Set(k, v)
 
 			return nil
@@ -172,7 +176,9 @@ func (s *stateImpl) Get(k []byte) ([]byte, bool, error) {
 		s.stateExTxnMux.Lock()
 		defer s.stateExTxnMux.Unlock()
 
-		if s.stateExTxnRef != nil {
+		// double check transaction is exist
+		if s.stateExTxnRef != nil &&
+			s.isTransaction.Load() {
 			v, ok, _ := s.stateExTxnRef.Get(k)
 			if ok {
 				return v, true, nil
@@ -188,7 +194,9 @@ func (s *stateImpl) SetCode(hash types.Hash, code []byte) error {
 		s.stateExTxnMux.Lock()
 		defer s.stateExTxnMux.Unlock()
 
-		if s.stateExTxnRef != nil {
+		// double check transaction is exist
+		if s.stateExTxnRef != nil &&
+			s.isTransaction.Load() {
 			_ = s.stateExTxnRef.Set(append(codePrefix, hash.Bytes()...), code)
 
 			return nil
@@ -203,7 +211,9 @@ func (s *stateImpl) GetCode(hash types.Hash) ([]byte, bool) {
 		s.stateExTxnMux.Lock()
 		defer s.stateExTxnMux.Unlock()
 
-		if s.stateExTxnRef != nil {
+		// double check transaction is exist
+		if s.stateExTxnRef != nil &&
+			s.isTransaction.Load() {
 			v, ok, _ := s.stateExTxnRef.Get(append(codePrefix, hash.Bytes()...))
 			if ok {
 				return v, true
@@ -254,10 +264,9 @@ func (s *stateImpl) NewSnapshotAt(root types.Hash) (state.Snapshot, error) {
 	return t, nil
 }
 
-func (s *stateImpl) ExclusiveTransaction(execute func(StateTransaction)) {
+func (s *stateImpl) ExclusiveTransaction(execute func(StateTransaction)) error {
 	s.txnMux.Lock()
 	defer s.txnMux.Unlock()
-	s.isTransaction.Store(true)
 
 	s.stateExTxnRef = &stateExTxn{
 		db:    make(map[txnKey]*txnPair),
@@ -273,6 +282,13 @@ func (s *stateImpl) ExclusiveTransaction(execute func(StateTransaction)) {
 	execute(s.stateExTxnRef)
 
 	s.stateExTxnRef = nil
+
+	err := s.storage.Sync()
+	if err != nil {
+		s.logger.Error("sync storage", "err", err)
+	}
+
+	return err
 }
 
 func (s *stateImpl) ExistTransaction() bool {

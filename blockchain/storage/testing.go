@@ -474,6 +474,7 @@ type writeReceiptsDelegate func(types.Hash, []*types.Receipt) error
 type readReceiptsDelegate func(types.Hash) ([]*types.Receipt, error)
 type writeTxLookupDelegate func(types.Hash, types.Hash) error
 type readTxLookupDelegate func(types.Hash) (types.Hash, bool)
+type syncDelegate func() error
 type closeDelegate func() error
 
 type MockStorage struct {
@@ -496,6 +497,7 @@ type MockStorage struct {
 	readReceiptsFn         readReceiptsDelegate
 	writeTxLookupFn        writeTxLookupDelegate
 	readTxLookupFn         readTxLookupDelegate
+	syncFn                 syncDelegate
 	closeFn                closeDelegate
 }
 
@@ -729,6 +731,18 @@ func (m *MockStorage) ReadTxLookup(hash types.Hash) (types.Hash, bool) {
 
 func (m *MockStorage) HookReadTxLookup(fn readTxLookupDelegate) {
 	m.readTxLookupFn = fn
+}
+
+func (m *MockStorage) Sync() error {
+	if m.syncFn != nil {
+		return m.syncFn()
+	}
+
+	return nil
+}
+
+func (m *MockStorage) HookSync(fn syncDelegate) {
+	m.syncFn = fn
 }
 
 func (m *MockStorage) Close() error {

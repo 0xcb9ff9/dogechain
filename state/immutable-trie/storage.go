@@ -25,6 +25,7 @@ type Batch interface {
 	StorageWriter
 
 	Commit() error
+	Rollback() error
 }
 
 // Storage stores the trie
@@ -33,6 +34,7 @@ type Storage interface {
 	StorageWriter
 
 	Batch() (Batch, error)
+	Sync() error
 	Close() error
 }
 
@@ -41,15 +43,15 @@ type kvStorageBatch struct {
 }
 
 func (batch *kvStorageBatch) Set(k, v []byte) error {
-	batch.bc.Set(k, v)
-
-	return nil
+	return batch.bc.Set(k, v)
 }
 
 func (batch *kvStorageBatch) Commit() error {
-	batch.bc.Write()
+	return batch.bc.Write()
+}
 
-	return nil
+func (batch *kvStorageBatch) Rollback() error {
+	return batch.bc.Rollback()
 }
 
 // wrap generic kvdb storage to implement Storage interface
@@ -82,6 +84,10 @@ func (kv *kvStorage) Batch() (Batch, error) {
 	return &kvStorageBatch{
 		bc: batch,
 	}, err
+}
+
+func (kv *kvStorage) Sync() error {
+	return kv.db.Sync()
 }
 
 func (kv *kvStorage) Close() error {
@@ -138,6 +144,10 @@ func (m *memStorage) Close() error {
 	return nil
 }
 
+func (m *memStorage) Sync() error {
+	return nil
+}
+
 func (m *memBatch) Set(p, v []byte) error {
 	buf := make([]byte, len(v))
 	copy(buf[:], v[:])
@@ -156,6 +166,10 @@ func (m *memBatch) Get(p []byte) ([]byte, bool, error) {
 }
 
 func (m *memBatch) Commit() error {
+	return nil
+}
+
+func (m *memBatch) Rollback() error {
 	return nil
 }
 

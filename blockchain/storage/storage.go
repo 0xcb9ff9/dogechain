@@ -41,6 +41,7 @@ type Storage interface {
 	WriteTxLookup(hash types.Hash, blockHash types.Hash) error
 	ReadTxLookup(hash types.Hash) (types.Hash, bool)
 
+	Sync() error
 	Close() error
 }
 

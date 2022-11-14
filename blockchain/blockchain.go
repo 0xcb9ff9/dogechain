@@ -997,6 +997,11 @@ func (b *Blockchain) WriteBlock(block *types.Block) error {
 		return err
 	}
 
+	err := b.db.Sync()
+	if err != nil {
+		return err
+	}
+
 	b.dispatchEvent(evnt)
 
 	// Update the average gas price

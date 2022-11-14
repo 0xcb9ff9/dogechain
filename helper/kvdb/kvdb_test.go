@@ -45,7 +45,8 @@ func TestKVStorageBatchWrite(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer batch.Close()
+
+	defer batch.Rollback()
 
 	batch.Set([]byte("key1"), []byte("value1"))
 	batch.Set([]byte("key1"), []byte("value2"))

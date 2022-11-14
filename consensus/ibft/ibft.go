@@ -1614,6 +1614,7 @@ func (i *Ibft) runRoundChangeState() {
 		timeout := i.state.MessageTimeout()
 
 		msg, ok := i.getNextMessage(timeout)
+
 		if !ok {
 			// closing
 			return
