@@ -341,7 +341,7 @@ func (t *TestServer) Start(ctx context.Context) error {
 		// enable jsonrpc
 		"--jsonrpc", t.JSONRPCAddr(),
 		// disable sync write
-		"--bolt.sync", "false",
+		"--bolt.sync=false",
 	}
 
 	if t.Config.IsWSEnable {
