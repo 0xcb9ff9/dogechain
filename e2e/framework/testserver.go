@@ -340,8 +340,6 @@ func (t *TestServer) Start(ctx context.Context) error {
 		"--libp2p", t.LibP2PAddr(),
 		// enable jsonrpc
 		"--jsonrpc", t.JSONRPCAddr(),
-		// disable sync write
-		"--bolt.sync=false",
 	}
 
 	if t.Config.IsWSEnable {
