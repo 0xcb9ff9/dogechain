@@ -43,6 +43,10 @@ func (m *memoryKV) Get(p []byte) ([]byte, bool, error) {
 	return v, true, nil
 }
 
+func (m *memoryKV) Sync() error {
+	return nil
+}
+
 func (m *memoryKV) Close() error {
 	return nil
 }

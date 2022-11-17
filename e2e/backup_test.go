@@ -72,8 +72,11 @@ func TestBackup(t *testing.T) {
 	}
 
 	for _, backupFile := range backupFiles {
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		t.Cleanup(cancel)
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+
+		t.Cleanup(func() {
+			cancel()
+		})
 
 		os.RemoveAll(path.Join(svr.Config.RootDir, "blockchain"))
 		os.RemoveAll(path.Join(svr.Config.RootDir, "trie"))

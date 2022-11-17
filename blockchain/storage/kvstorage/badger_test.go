@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 )
 
-func newLevelDBStorage(t *testing.T) (storage.Storage, func()) {
+func newTestKVStorage(t *testing.T) (storage.Storage, func()) {
 	t.Helper()
 
 	path, err := os.MkdirTemp("/tmp", "minimal_storage")
@@ -19,8 +19,8 @@ func newLevelDBStorage(t *testing.T) (storage.Storage, func()) {
 
 	logger := hclog.NewNullLogger()
 
-	s, err := NewLevelDBStorageBuilder(
-		logger, kvdb.NewLevelDBBuilder(logger, path)).Build()
+	s, err := NewKVStorageBuilder(
+		logger, kvdb.NewBadgerBuilder(logger, path)).Build()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -38,6 +38,6 @@ func newLevelDBStorage(t *testing.T) (storage.Storage, func()) {
 	return s, closeFn
 }
 
-func TestLevelDBStorage(t *testing.T) {
-	storage.TestStorage(t, newLevelDBStorage)
+func TestKVStorage(t *testing.T) {
+	storage.TestStorage(t, newTestKVStorage)
 }

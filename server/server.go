@@ -135,21 +135,19 @@ func newLoggerFromConfig(config *Config) (hclog.Logger, error) {
 	return newCLILogger(config), nil
 }
 
-func newLevelDBBuilder(logger hclog.Logger, config *Config, path string) kvdb.LevelDBBuilder {
-	leveldbBuilder := kvdb.NewLevelDBBuilder(
+func newBadgerBuilder(logger hclog.Logger, config *Config, path string) kvdb.BadgerBuilder {
+	badgerBuilder := kvdb.NewBadgerBuilder(
 		logger,
 		path,
 	)
 
-	// trie cache + blockchain cache = config.LeveldbOptions.CacheSize / 2
-	leveldbBuilder.SetCacheSize(config.LeveldbOptions.CacheSize / 2).
-		SetHandles(config.LeveldbOptions.Handles).
-		SetBloomKeyBits(config.LeveldbOptions.BloomKeyBits).
-		SetCompactionTableSize(config.LeveldbOptions.CompactionTableSize).
-		SetCompactionTotalSize(config.LeveldbOptions.CompactionTotalSize).
-		SetNoSync(config.LeveldbOptions.NoSync)
+	// trie cache + blockchain cache = config.BadgerOptions.CacheSize * 2
+	badgerBuilder.SetCacheSize(config.BadgerOptions.IndexCacheSize).
+		SetBloomFalsePositive(config.BadgerOptions.BloomFalsePositive).
+		SetBaseTableSize(config.BadgerOptions.BaseTableSize).
+		SetSyncWrites(config.BadgerOptions.SyncWrites)
 
-	return leveldbBuilder
+	return badgerBuilder
 }
 
 // NewServer creates a new Minimal server, using the passed in configuration
@@ -206,13 +204,13 @@ func NewServer(config *Config) (*Server, error) {
 
 	// start blockchain object
 	stateStorage, err := func() (itrie.Storage, error) {
-		leveldbBuilder := newLevelDBBuilder(
+		badgerBuilder := newBadgerBuilder(
 			logger,
 			config,
 			filepath.Join(m.config.DataDir, "trie"),
 		)
 
-		return itrie.NewLevelDBStorage(leveldbBuilder)
+		return itrie.NewKVStorage(badgerBuilder)
 	}()
 
 	if err != nil {
@@ -233,7 +231,7 @@ func NewServer(config *Config) (*Server, error) {
 	config.Chain.Genesis.StateRoot = genesisRoot
 
 	// create leveldb storageBuilder
-	leveldbBuilder := newLevelDBBuilder(
+	leveldbBuilder := newBadgerBuilder(
 		logger,
 		config,
 		filepath.Join(m.config.DataDir, "blockchain"),
@@ -243,7 +241,7 @@ func NewServer(config *Config) (*Server, error) {
 	m.blockchain, err = blockchain.NewBlockchain(
 		logger,
 		config.Chain,
-		kvstorage.NewLevelDBStorageBuilder(logger, leveldbBuilder),
+		kvstorage.NewKVStorageBuilder(logger, leveldbBuilder),
 		nil,
 		m.executor,
 		m.serverMetrics.blockchain,

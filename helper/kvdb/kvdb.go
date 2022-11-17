@@ -10,6 +10,7 @@ type KVStorage interface {
 	Set(k, v []byte) error
 	Get(k []byte) ([]byte, bool, error)
 
+	Sync() error
 	Close() error
 }
 

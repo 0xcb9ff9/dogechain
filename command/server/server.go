@@ -129,48 +129,34 @@ func setFlags(cmd *cobra.Command) {
 		)
 	}
 
-	// leveldb flags
+	// badger flags
 	{
 		cmd.Flags().IntVar(
-			&params.leveldbCacheSize,
-			leveldbCacheFlag,
-			kvdb.DefaultLevelDBCache,
-			"the size of the leveldb cache in MB",
+			&params.badgerIndexCacheSize,
+			badgerIndexCacheFlag,
+			kvdb.DefaultBadgerIndexCache,
+			"the size of the Badger index cache in MB",
+		)
+
+		cmd.Flags().Float64Var(
+			&params.badgerBloomFalsePositive,
+			badgerBloomFalsePositiveFlag,
+			kvdb.DefaultBloomFalsePositive,
+			"the bits of Badger bloom filters false positive rate",
 		)
 
 		cmd.Flags().IntVar(
-			&params.leveldbHandles,
-			leveldbHandlesFlag,
-			kvdb.DefaultLevelDBHandles,
-			"the number of handles to leveldb open files",
-		)
-
-		cmd.Flags().IntVar(
-			&params.leveldbBloomKeyBits,
-			leveldbBloomKeyBitsFlag,
-			kvdb.DefaultLevelDBBloomKeyBits,
-			"the bits of leveldb bloom filters",
-		)
-
-		cmd.Flags().IntVar(
-			&params.leveldbTableSize,
-			leveldbTableSizeFlag,
-			kvdb.DefaultLevelDBCompactionTableSize,
-			"the leveldb 'sorted table' size in MB",
-		)
-
-		cmd.Flags().IntVar(
-			&params.leveldbTotalTableSize,
-			leveldbTotalTableSizeFlag,
-			kvdb.DefaultLevelDBCompactionTotalSize,
-			"limits leveldb total size of 'sorted table' for each level in MB",
+			&params.badgerTableSize,
+			badgerTableSizeFlag,
+			kvdb.DefaultBaseTablesSize,
+			"the Badger base table size in MB",
 		)
 
 		cmd.Flags().BoolVar(
-			&params.leveldbNoSync,
-			leveldbNoSyncFlag,
-			kvdb.DefaultLevelDBNoSync,
-			"leveldb nosync allows completely disable fsync",
+			&params.badgerSyncWrites,
+			badgerSyncFlag,
+			kvdb.DefaultBadgerSyncWrites,
+			"Badger sync write",
 		)
 	}
 

@@ -18,12 +18,10 @@ const (
 	configFlag                   = "config"
 	genesisPathFlag              = "chain"
 	dataDirFlag                  = "data-dir"
-	leveldbCacheFlag             = "leveldb.cache-size"
-	leveldbHandlesFlag           = "leveldb.handles"
-	leveldbBloomKeyBitsFlag      = "leveldb.bloom-bits"
-	leveldbTableSizeFlag         = "leveldb.table-size"
-	leveldbTotalTableSizeFlag    = "leveldb.total-table-size"
-	leveldbNoSyncFlag            = "leveldb.nosync"
+	badgerIndexCacheFlag         = "badger.index-cache-size"
+	badgerBloomFalsePositiveFlag = "badger.bloom-false-positive"
+	badgerTableSizeFlag          = "badger.table-size"
+	badgerSyncFlag               = "badger.sync"
 	libp2pAddressFlag            = "libp2p"
 	prometheusAddressFlag        = "prometheus"
 	natFlag                      = "nat"
@@ -76,12 +74,10 @@ type serverParams struct {
 	rawConfig  *Config
 	configPath string
 
-	leveldbCacheSize      int
-	leveldbHandles        int
-	leveldbBloomKeyBits   int
-	leveldbTableSize      int
-	leveldbTotalTableSize int
-	leveldbNoSync         bool
+	badgerIndexCacheSize     int
+	badgerBloomFalsePositive float64
+	badgerTableSize          int
+	badgerSyncWrites         bool
 
 	libp2pAddress     *net.TCPAddr
 	prometheusAddress *net.TCPAddr
@@ -220,13 +216,11 @@ func (p *serverParams) generateConfig() *server.Config {
 		PromoteOutdateSeconds: p.rawConfig.TxPool.PromoteOutdateSeconds,
 		SecretsManager:        p.secretsConfig,
 		RestoreFile:           p.getRestoreFilePath(),
-		LeveldbOptions: &server.LeveldbOptions{
-			CacheSize:           p.leveldbCacheSize,
-			Handles:             p.leveldbHandles,
-			BloomKeyBits:        p.leveldbBloomKeyBits,
-			CompactionTableSize: p.leveldbTableSize,
-			CompactionTotalSize: p.leveldbTotalTableSize,
-			NoSync:              p.leveldbNoSync,
+		BadgerOptions: &server.BadgerOptions{
+			IndexCacheSize:     p.badgerIndexCacheSize,
+			BloomFalsePositive: p.badgerBloomFalsePositive,
+			BaseTableSize:      p.badgerTableSize,
+			SyncWrites:         p.badgerSyncWrites,
 		},
 		BlockTime:      p.rawConfig.BlockTime,
 		LogLevel:       hclog.LevelFromString(p.rawConfig.LogLevel),

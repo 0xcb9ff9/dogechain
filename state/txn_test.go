@@ -35,6 +35,10 @@ func (m *mockState) GetCode(hash types.Hash) ([]byte, bool) {
 	panic("Not implemented in tests")
 }
 
+func (m *mockState) Sync() error {
+	return nil
+}
+
 type mockSnapshot struct {
 	data map[string][]byte
 }

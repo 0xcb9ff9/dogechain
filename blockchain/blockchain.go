@@ -1060,7 +1060,7 @@ func (b *Blockchain) WriteBlock(block *types.Block, source string) error {
 		b.metrics.TransactionNum.Observe(float64(len(block.Transactions)))
 	}
 
-	return nil
+	return b.db.Sync()
 }
 
 // extractBlockReceipts extracts the receipts from the passed in block

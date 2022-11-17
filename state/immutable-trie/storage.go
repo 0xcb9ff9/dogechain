@@ -31,6 +31,8 @@ type Storage interface {
 	StorageWriter
 
 	Batch() Batch
+
+	Sync() error
 	Close() error
 }
 
@@ -69,12 +71,16 @@ func (kv *kvStorage) Batch() Batch {
 	}
 }
 
+func (kv *kvStorage) Sync() error {
+	return kv.db.Sync()
+}
+
 func (kv *kvStorage) Close() error {
 	return kv.db.Close()
 }
 
-func NewLevelDBStorage(leveldbBuilder kvdb.LevelDBBuilder) (Storage, error) {
-	db, err := leveldbBuilder.Build()
+func NewKVStorage(badgerBuilder kvdb.BadgerBuilder) (Storage, error) {
+	db, err := badgerBuilder.Build()
 	if err != nil {
 		return nil, err
 	}
@@ -114,6 +120,10 @@ func (m *memStorage) Get(p []byte) ([]byte, bool, error) {
 
 func (m *memStorage) Batch() Batch {
 	return &memBatch{db: &m.db}
+}
+
+func (m *memStorage) Sync() error {
+	return nil
 }
 
 func (m *memStorage) Close() error {

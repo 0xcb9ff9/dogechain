@@ -348,6 +348,8 @@ func (p *TxPool) Close() {
 
 	p.logger.Info("txpool close pruneAccountTicker")
 	p.pruneAccountTicker.Stop()
+
+	p.logger.Info("txpool close eventManager")
 	p.eventManager.Close()
 
 	p.logger.Info("txpool close topic")

@@ -2,27 +2,23 @@ package kvdb
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/go-hclog"
-	"github.com/syndtr/goleveldb/leveldb"
-	"github.com/syndtr/goleveldb/leveldb/filter"
-	"github.com/syndtr/goleveldb/leveldb/opt"
+
+	badger "github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v3/options"
 )
 
 const (
-	// minLevelDBCache is the minimum memory allocate to leveldb
-	// half write, half read
-	minLevelDBCache = 16 // 16 MiB
+	minBadgerIndexCache = 16 // 16 MiB
 
-	// minLevelDBHandles is the minimum number of files handles to leveldb open files
-	minLevelDBHandles = 16
+	DefaultBadgerIndexCache   = 512  // 512 MiB
+	DefaultBloomFalsePositive = 0.01 // bloom filter false positive (0.01 = 1%)
+	DefaultBaseTablesSize     = 4    // 4 MiB
+	DefaultBadgerSyncWrites   = false
 
-	DefaultLevelDBCache               = 1024 // 1 GiB
-	DefaultLevelDBHandles             = 512  // files handles to leveldb open files
-	DefaultLevelDBBloomKeyBits        = 2048 // bloom filter bits (256 bytes)
-	DefaultLevelDBCompactionTableSize = 4    // 4  MiB
-	DefaultLevelDBCompactionTotalSize = 40   // 40 MiB
-	DefaultLevelDBNoSync              = false
+	gcTicker = 5 * time.Minute
 )
 
 func max(a, b int) int {
@@ -33,125 +29,131 @@ func max(a, b int) int {
 	return b
 }
 
-type LevelDBBuilder interface {
-	// set cache size
-	SetCacheSize(int) LevelDBBuilder
+func clamp(n, min, max float64) float64 {
+	if n < min {
+		return min
+	}
 
-	// set handles
-	SetHandles(int) LevelDBBuilder
+	if n > max {
+		return max
+	}
+
+	return n
+}
+
+type BadgerBuilder interface {
+	// set cache size
+	SetCacheSize(int) BadgerBuilder
 
 	// set bloom key bits
-	SetBloomKeyBits(int) LevelDBBuilder
+	SetBloomFalsePositive(float64) BadgerBuilder
 
 	// set compaction table size
-	SetCompactionTableSize(int) LevelDBBuilder
+	SetBaseTableSize(int) BadgerBuilder
 
-	// set compaction table total size
-	SetCompactionTotalSize(int) LevelDBBuilder
-
-	// set no sync
-	SetNoSync(bool) LevelDBBuilder
+	// set sync write
+	SetSyncWrites(bool) BadgerBuilder
 
 	// build the storage
 	Build() (KVBatchStorage, error)
 }
 
-type leveldbBuilder struct {
+type badgerBuilder struct {
 	logger  hclog.Logger
-	path    string
-	options *opt.Options
+	options badger.Options
 }
 
-func (builder *leveldbBuilder) SetCacheSize(cacheSize int) LevelDBBuilder {
-	cacheSize = max(cacheSize, minLevelDBCache)
+func (builder *badgerBuilder) SetCacheSize(cacheSize int) BadgerBuilder {
+	cacheSize = max(cacheSize, minBadgerIndexCache)
 
-	builder.options.BlockCacheCapacity = cacheSize * opt.MiB
+	builder.options = builder.options.WithIndexCacheSize(int64(cacheSize) << 20)
 
-	builder.logger.Info("leveldb",
-		"BlockCacheCapacity", fmt.Sprintf("%d Mib", cacheSize),
+	builder.logger.Info("badger",
+		"IndexCacheSize", fmt.Sprintf("%d Mib", cacheSize),
 	)
 
 	return builder
 }
 
-func (builder *leveldbBuilder) SetHandles(handles int) LevelDBBuilder {
-	builder.options.OpenFilesCacheCapacity = max(handles, minLevelDBHandles)
+func (builder *badgerBuilder) SetBloomFalsePositive(bloomFalsePositive float64) BadgerBuilder {
+	builder.options = builder.options.WithBloomFalsePositive(
+		clamp(
+			bloomFalsePositive,
+			0.0001,
+			0.9999,
+		))
 
-	builder.logger.Info("leveldb",
-		"OpenFilesCacheCapacity", builder.options.OpenFilesCacheCapacity,
+	builder.logger.Info("badger",
+		"Bloom filter False Positive", bloomFalsePositive,
 	)
 
 	return builder
 }
 
-func (builder *leveldbBuilder) SetBloomKeyBits(bloomKeyBits int) LevelDBBuilder {
-	builder.options.Filter = filter.NewBloomFilter(bloomKeyBits)
+func (builder *badgerBuilder) SetBaseTableSize(baseTableSize int) BadgerBuilder {
+	builder.options = builder.options.WithBaseTableSize(int64(baseTableSize) << 20)
 
-	builder.logger.Info("leveldb",
-		"BloomFilter bits", bloomKeyBits,
+	builder.logger.Info("badger",
+		"BaseTableSize", fmt.Sprintf("%d Mib", baseTableSize))
+
+	return builder
+}
+
+func (builder *badgerBuilder) SetSyncWrites(sync bool) BadgerBuilder {
+	builder.options = builder.options.WithSyncWrites(sync)
+
+	builder.logger.Info("badger",
+		"sync", sync,
 	)
 
 	return builder
 }
 
-func (builder *leveldbBuilder) SetCompactionTableSize(compactionTableSize int) LevelDBBuilder {
-	builder.options.CompactionTableSize = compactionTableSize * opt.MiB
-	builder.options.WriteBuffer = builder.options.CompactionTableSize * 2
-
-	builder.logger.Info("leveldb",
-		"CompactionTableSize", fmt.Sprintf("%d Mib", compactionTableSize),
-		"WriteBuffer", fmt.Sprintf("%d Mib", builder.options.WriteBuffer/opt.MiB),
-	)
-
-	return builder
-}
-
-func (builder *leveldbBuilder) SetCompactionTotalSize(compactionTotalSize int) LevelDBBuilder {
-	builder.options.CompactionTotalSize = compactionTotalSize * opt.MiB
-
-	builder.logger.Info("leveldb",
-		"CompactionTotalSize", fmt.Sprintf("%d Mib", compactionTotalSize),
-	)
-
-	return builder
-}
-
-func (builder *leveldbBuilder) SetNoSync(noSync bool) LevelDBBuilder {
-	builder.options.NoSync = noSync
-
-	builder.logger.Info("leveldb",
-		"NoSync", noSync,
-	)
-
-	return builder
-}
-
-func (builder *leveldbBuilder) Build() (KVBatchStorage, error) {
-	db, err := leveldb.OpenFile(builder.path, builder.options)
+func (builder *badgerBuilder) Build() (KVBatchStorage, error) {
+	db, err := badger.Open(builder.options)
 	if err != nil {
+		builder.logger.Error("badger open database", "error", err)
+
 		return nil, err
 	}
 
-	return &levelDBKV{db: db}, nil
+	closeCh := make(chan struct{})
+	ticker := time.NewTicker(gcTicker)
+
+	go func() {
+		select {
+		case <-ticker.C:
+			ticker.Reset(gcTicker)
+
+			err := db.RunValueLogGC(0.7)
+			if err != nil {
+				builder.logger.Error("badger GC failed", "error", err)
+			}
+		case <-closeCh:
+			ticker.Stop()
+
+			return
+		}
+	}()
+
+	return &badgerKV{
+		db:        db,
+		closeFlag: false,
+		closeCh:   closeCh,
+	}, nil
 }
 
 // NewBuilder creates the new leveldb storage builder
-func NewLevelDBBuilder(logger hclog.Logger, path string) LevelDBBuilder {
-	return &leveldbBuilder{
+func NewBadgerBuilder(logger hclog.Logger, path string) BadgerBuilder {
+	return &badgerBuilder{
 		logger: logger,
-		path:   path,
-		options: &opt.Options{
-			OpenFilesCacheCapacity:        minLevelDBHandles,
-			CompactionTableSize:           DefaultLevelDBCompactionTableSize * opt.MiB,
-			CompactionTotalSize:           DefaultLevelDBCompactionTotalSize * opt.MiB,
-			BlockCacheCapacity:            minLevelDBCache * opt.MiB,
-			WriteBuffer:                   (DefaultLevelDBCompactionTableSize * 2) * opt.MiB,
-			CompactionTableSizeMultiplier: 1.1, // scale size up 1.1 multiple in next level
-			Filter:                        filter.NewBloomFilter(DefaultLevelDBBloomKeyBits),
-			NoSync:                        false,
-			BlockSize:                     256 * opt.KiB, // default 4kb, but one key-value pair need 0.5kb
-			FilterBaseLg:                  19,            // 512kb
-			DisableSeeksCompaction:        true,
-		},
+		options: badger.
+			DefaultOptions(path).
+			WithIndexCacheSize(DefaultBadgerIndexCache << 20).
+			WithBaseTableSize(DefaultBaseTablesSize << 20).
+			WithSyncWrites(DefaultBadgerSyncWrites).
+			WithChecksumVerificationMode(options.OnBlockRead).
+			WithVerifyValueChecksum(true).
+			WithMaxLevels(9),
 	}
 }

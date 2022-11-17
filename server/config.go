@@ -37,7 +37,7 @@ type Config struct {
 	DataDir     string
 	RestoreFile *string
 
-	LeveldbOptions *LeveldbOptions
+	BadgerOptions *BadgerOptions
 
 	Seal           bool
 	SecretsManager *secrets.SecretsManagerConfig
@@ -51,14 +51,12 @@ type Config struct {
 	BlockBroadcast bool
 }
 
-// LeveldbOptions holds the leveldb options
-type LeveldbOptions struct {
-	CacheSize           int
-	Handles             int
-	BloomKeyBits        int
-	CompactionTableSize int
-	CompactionTotalSize int
-	NoSync              bool
+// BadgerOptions holds the badger options
+type BadgerOptions struct {
+	IndexCacheSize     int
+	BloomFalsePositive float64
+	BaseTableSize      int
+	SyncWrites         bool
 }
 
 // Telemetry holds the config details for metric services
