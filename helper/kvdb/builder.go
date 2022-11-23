@@ -13,7 +13,7 @@ import (
 const (
 	minBadgerIndexCache = 16 // 16 MiB
 
-	DefaultBadgerIndexCache   = 512  // 512 MiB
+	DefaultBadgerIndexCache   = 8    // 8 MiB
 	DefaultBloomFalsePositive = 0.01 // bloom filter false positive (0.01 = 1%)
 	DefaultBaseTablesSize     = 4    // 4 MiB
 	DefaultBadgerSyncWrites   = false
