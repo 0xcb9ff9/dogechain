@@ -149,11 +149,10 @@ func NewBadgerBuilder(logger hclog.Logger, path string) BadgerBuilder {
 		logger: logger,
 		options: badger.
 			DefaultOptions(path).
+			WithCompression(options.ZSTD).
 			WithIndexCacheSize(DefaultBadgerIndexCache << 20).
 			WithBaseTableSize(DefaultBaseTablesSize << 20).
 			WithSyncWrites(DefaultBadgerSyncWrites).
-			WithChecksumVerificationMode(options.OnBlockRead).
-			WithVerifyValueChecksum(true).
 			WithMaxLevels(9),
 	}
 }
