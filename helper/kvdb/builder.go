@@ -11,14 +11,15 @@ import (
 )
 
 const (
-	minBadgerIndexCache = 16 // 16 MiB
+	minBadgerIndexCache = 16   // 16 MiB
+	maxValueThreshold   = 1024 // 1 KiB
 
 	DefaultBadgerIndexCache   = 8    // 8 MiB
 	DefaultBloomFalsePositive = 0.01 // bloom filter false positive (0.01 = 1%)
 	DefaultBaseTablesSize     = 4    // 4 MiB
 	DefaultBadgerSyncWrites   = false
 
-	gcTicker = 5 * time.Minute
+	gcTicker = 1 * time.Minute
 )
 
 func max(a, b int) int {
@@ -152,6 +153,7 @@ func NewBadgerBuilder(logger hclog.Logger, path string) BadgerBuilder {
 			WithCompression(options.ZSTD).
 			WithIndexCacheSize(DefaultBadgerIndexCache << 20).
 			WithBaseTableSize(DefaultBaseTablesSize << 20).
+			WithValueThreshold(maxValueThreshold).
 			WithSyncWrites(DefaultBadgerSyncWrites).
 			WithNumMemtables(1).
 			WithNumLevelZeroTables(1).
