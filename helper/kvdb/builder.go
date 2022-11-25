@@ -155,9 +155,6 @@ func NewBadgerBuilder(logger hclog.Logger, path string) BadgerBuilder {
 			WithBaseTableSize(DefaultBaseTablesSize << 20).
 			WithValueThreshold(maxValueThreshold).
 			WithSyncWrites(DefaultBadgerSyncWrites).
-			WithNumMemtables(1).
-			WithNumLevelZeroTables(1).
-			WithNumLevelZeroTablesStall(2).
 			WithMaxLevels(9),
 	}
 }

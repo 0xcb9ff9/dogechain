@@ -27,6 +27,29 @@ build:
 		-X 'github.com/dogechain-lab/dogechain/versioning.BuildTime=$(DATE)'" \
 	main.go
 
+.PHONY: build-jemalloc-lib
+build-jemalloc-lib:
+	$(eval JEMALLOC_BUILD_TMP_DIR = $(mktemp -d))
+	cd $(JEMALLOC_BUILD_TMP_DIR) && \
+	curl -s -o jemalloc.tar.bz2 -L https://github.com/jemalloc/jemalloc/releases/download/5.3.0/jemalloc-5.3.0.tar.bz2 && \
+	tar xvf jemalloc.tar.bz2 && \
+	cd jemalloc-5.3.0/ && \
+	./configure --enable-static --with-jemalloc-prefix="je_" && \
+	make install
+
+.PHONY: build-jemalloc
+build-jemalloc: build-jemalloc-lib
+	$(eval LATEST_VERSION = $(shell git describe --tags --abbrev=0))
+	$(eval COMMIT_HASH = $(shell git rev-parse HEAD))
+	$(eval DATE = $(shell date -u +'%Y-%m-%dT%TZ'))
+	go build -o dogechain \
+		-tags=jemalloc -ldflags="\
+		-X 'github.com/dogechain-lab/dogechain/versioning.Version=$(LATEST_VERSION)'\
+		-X 'github.com/dogechain-lab/dogechain/versioning.Commit=$(COMMIT_HASH)'\
+		-X 'github.com/dogechain-lab/dogechain/versioning.BuildTime=$(DATE)'" \
+	main.go
+
+
 .PHONY: lint
 lint:
 	golangci-lint run -c .golangci.yml
