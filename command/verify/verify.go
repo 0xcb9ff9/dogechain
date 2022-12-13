@@ -77,8 +77,8 @@ func runCommand(cmd *cobra.Command, _ []string) {
 		return
 	}
 
-	stateStorage, err := itrie.NewLevelDBStorage(
-		newLevelDBBuilder(logger, filepath.Join(params.DataDir, "trie")))
+	stateStorage, err := itrie.NewKVStorage(
+		newBadgerBuilder(logger, filepath.Join(params.DataDir, "trie")))
 	if err != nil {
 		logger.Error("failed to create state storage", "err", err)
 

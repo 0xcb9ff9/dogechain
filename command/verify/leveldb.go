@@ -5,11 +5,11 @@ import (
 	"github.com/hashicorp/go-hclog"
 )
 
-func newLevelDBBuilder(log hclog.Logger, path string) kvdb.LevelDBBuilder {
-	leveldbBuilder := kvdb.NewLevelDBBuilder(
+func newBadgerBuilder(log hclog.Logger, path string) kvdb.BadgerBuilder {
+	badgerBuilder := kvdb.NewBadgerBuilder(
 		log,
 		path,
 	)
 
-	return leveldbBuilder
+	return badgerBuilder
 }

@@ -102,7 +102,7 @@ func createConsensus(
 func createBlockchain(
 	logger hclog.Logger,
 	genesis *chain.Chain,
-	st *itrie.State,
+	st itrie.State,
 	dataDir string,
 ) (*blockchain.Blockchain, consensus.Consensus, error) {
 	executor := state.NewExecutor(genesis.Params, st, logger)
@@ -115,9 +115,9 @@ func createBlockchain(
 	chain, err := blockchain.NewBlockchain(
 		logger,
 		genesis,
-		kvstorage.NewLevelDBStorageBuilder(
+		kvstorage.NewKVStorageBuilder(
 			logger,
-			newLevelDBBuilder(logger, filepath.Join(dataDir, "blockchain")),
+			newBadgerBuilder(logger, filepath.Join(dataDir, "blockchain")),
 		),
 		nil,
 		executor,
