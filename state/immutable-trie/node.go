@@ -15,6 +15,12 @@ type Node interface {
 
 // ValueNode is a leaf on the merkle-trie
 type ValueNode struct {
+	//lint:ignore U1000 ignore unused field warning
+	//lint:unused
+	noCopy noCopy
+
+	_inpool bool
+
 	// hash marks if this value node represents a stored node
 	hash bool
 	buf  []byte
@@ -31,6 +37,12 @@ func (v *ValueNode) SetHash(b []byte) []byte {
 }
 
 type common struct {
+	//lint:ignore U1000 ignore unused field warning
+	//lint:unused
+	noCopy noCopy
+
+	_inpool bool
+
 	hash []byte
 }
 
@@ -55,6 +67,8 @@ type ShortNode struct {
 
 // FullNode is a node with several children
 type FullNode struct {
+	_inpool bool
+
 	common
 	epoch    uint32
 	value    Node
@@ -101,8 +115,7 @@ func lookupNode(storage StorageReader, node interface{}, key []byte) (Node, []by
 				return nil, nil, nil
 			}
 
-			child, res, err := lookupNode(storage, nc, key)
-			nodePool.PutNode(child)
+			_, res, err := lookupNode(storage, nc, key)
 
 			return nc, res, err
 		}

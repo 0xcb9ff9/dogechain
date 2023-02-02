@@ -16,7 +16,6 @@ type State interface {
 	NewSnapshotAt(types.Hash) (Snapshot, error)
 	NewSnapshot() Snapshot
 	GetCode(hash types.Hash) ([]byte, bool)
-	RecycleSnapshot(Snapshot)
 }
 
 type Snapshot interface {

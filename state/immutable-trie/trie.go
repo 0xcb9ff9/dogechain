@@ -120,9 +120,6 @@ func (t *Trie) Commit(objs []*state.Object) (state.Snapshot, []byte, error) {
 
 					accountStateRoot, _ := localTxn.Hash(st)
 
-					// return node to pool
-					st.RecycleSnapshot(trie)
-
 					// end observe account hash time
 					observe()
 

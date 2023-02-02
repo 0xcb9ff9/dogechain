@@ -373,8 +373,6 @@ func (t *txpoolHub) GetNonce(root types.Hash, addr types.Address) uint64 {
 		return 0
 	}
 
-	defer t.state.RecycleSnapshot(snap)
-
 	result, ok := snap.Get(keccak.Keccak256(nil, addr.Bytes()))
 	if !ok {
 		return 0
@@ -394,8 +392,6 @@ func (t *txpoolHub) GetBalance(root types.Hash, addr types.Address) (*big.Int, e
 	if err != nil {
 		return nil, fmt.Errorf("unable to get snapshot for root, %w", err)
 	}
-
-	defer t.state.RecycleSnapshot(snap)
 
 	result, ok := snap.Get(keccak.Keccak256(nil, addr.Bytes()))
 	if !ok {

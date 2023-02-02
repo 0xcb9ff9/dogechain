@@ -26,8 +26,6 @@ type StateDBReader interface {
 
 	NewSnapshot() state.Snapshot
 	NewSnapshotAt(types.Hash) (state.Snapshot, error)
-
-	RecycleSnapshot(state.Snapshot)
 }
 
 type StateDB interface {
@@ -133,16 +131,6 @@ func (db *stateDBImpl) GetCode(hash types.Hash) ([]byte, bool) {
 	}
 
 	return v, true
-}
-
-func (db *stateDBImpl) RecycleSnapshot(snap state.Snapshot) {
-	trie, ok := snap.(*Trie)
-	if ok {
-		node := trie.root
-		trie.root = nil
-
-		nodePool.PutNode(node)
-	}
 }
 
 func (db *stateDBImpl) NewSnapshot() state.Snapshot {
