@@ -13,6 +13,10 @@ import (
 	"github.com/dogechain-lab/dogechain/helper/nocopy"
 )
 
+const (
+	ErrContextDone = "context is done"
+)
+
 type WaitGroup interface {
 	// Go() add a goroutine to wait group
 	Go(f func(context.Context))
@@ -48,6 +52,13 @@ func NewWaitGroup(ctx context.Context) WaitGroup {
 }
 
 func (wgroup *waitGroup) Go(f func(context.Context)) {
+	// if context is done, panic
+	select {
+	case <-wgroup.ctx.Done():
+		panic(ErrContextDone)
+	default:
+	}
+
 	wgroup.wg.Add(1)
 
 	go func(wgroup *waitGroup) {

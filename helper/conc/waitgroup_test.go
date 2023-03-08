@@ -78,5 +78,15 @@ func TestWaitGroup(t *testing.T) {
 			require.Panics(t, wg.Wait)
 			require.Equal(t, int64(2), i.Load())
 		})
+
+		t.Run("panic is context done", func(t *testing.T) {
+			t.Parallel()
+			ctx, cancel := context.WithCancel(context.Background())
+			wg := NewWaitGroup(ctx)
+			cancel()
+			require.Panics(t, func() {
+				wg.Go(func(ctx context.Context) {})
+			})
+		})
 	})
 }
